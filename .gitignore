@@ -1,12 +1,31 @@
-.env
+# Dependencies and build output (the site is assembled in CI)
+node_modules/
+_site/
+dist/
+build/
+.cache/
+
+# Python leftovers from the earlier prototype
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
-node_modules/
-.next/
-build/
-.dart_tool/
+.venv*/
 *.db
-uploads/
+
+# Flutter/Dart leftovers from the earlier prototype
+.dart_tool/
+.flutter-plugins
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.log

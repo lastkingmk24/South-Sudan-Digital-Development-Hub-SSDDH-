@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>South Sudan Digital Development Hub — verified public services</title>
+    <meta
+      name="description"
+      content="SSDDH is an offline-first prototype for finding verified public services in South Sudan, reporting community issues and asking a citation-gated assistant. All data is synthetic demo content."
+    />
+    <meta name="theme-color" content="#0f5132" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1512" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/img/icon-180.png" />
+    <link rel="stylesheet" href="assets/css/app.css" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="South Sudan Digital Development Hub" />
+    <meta property="og:title" content="South Sudan Digital Development Hub (SSDDH)" />
+    <meta
+      property="og:description"
+      content="Offline-first public services directory, community reporting and a citation-gated information assistant. Synthetic demo data."
+    />
+    <meta property="og:image" content="https://lastkingmk24.github.io/South-Sudan-Digital-Development-Hub-SSDDH-/assets/img/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="https://lastkingmk24.github.io/South-Sudan-Digital-Development-Hub-SSDDH-/" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar__inner">
+          <a class="brand" href="#/home" aria-label="SSDDH home">
+            <img class="brand__mark" src="assets/img/logo.svg" alt="" width="38" height="38" />
+            <span class="brand__text">
+              <strong data-i18n="app.name">South Sudan Digital Development Hub</strong>
+              <span data-i18n="app.tagline">Verified services, community reports, clear answers</span>
+            </span>
+          </a>
+
+          <nav class="topnav" id="topnav" aria-label="Primary"></nav>
+
+          <div class="topbar__actions">
+            <span class="pill pill--net" id="net-pill"></span>
+            <button type="button" class="btn btn--soft btn--sm install-btn" id="install-button" hidden
+              data-i18n="app.install">Install app</button>
+            <button type="button" class="icon-btn" id="lang-toggle" aria-label="Change language">ع</button>
+            <button type="button" class="icon-btn" id="theme-toggle" aria-label="Change theme"></button>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main" tabindex="-1">
+        <div class="container" id="view"></div>
+        <footer class="footer container" id="app-footer"></footer>
+      </main>
+
+      <nav class="tabbar" id="tabbar" aria-label="Primary"></nav>
+    </div>
+
+    <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+    <dialog id="detail-dialog" class="dialog" aria-labelledby="dialog-title"></dialog>
+    <dialog id="app-dialog" class="dialog"></dialog>
+
+    <noscript>
+      <div class="noscript">
+        <h1>JavaScript is required</h1>
+        <p>
+          This demo runs entirely in your browser. Please enable JavaScript to use the services directory, the
+          report queue and the assistant.
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module" src="assets/js/app.js"></script>
+  </body>
+</html>
