@@ -22,18 +22,78 @@ order in which the missing pieces would need to arrive.
 | Mobile | Installable PWA | Native wrappers if push notifications or background sync are required |
 | Accessibility | Keyboard, focus, live regions, reduced motion | Independent audit against WCAG 2.2 AA with assistive-technology users |
 
-## Why the backend, dashboard and mobile client were removed
+## What was deleted, and what never existed
 
-Earlier drafts of this repository described a FastAPI + PostGIS backend, a Next.js admin dashboard
-and a Flutter app, and shipped a `docker-compose.yml` that referenced `backend/` and
-`admin-dashboard/` build contexts. None of those directories were ever committed: `docker compose up`
-could not build, Pages published an empty root, and the README described a platform that did not
-exist.
+Two different things get confused here, so stating both plainly:
 
-Rather than keep unreachable scaffolding, the repository now contains only what runs. The compose
-file and `.env.example` were removed with the services they configured. The intent is not to abandon
-the platform design — it is to stop advertising it before it exists, and to have one honest, working
-slice instead of three empty ones.
+**Nothing was deleted from a working platform.** The backend, admin dashboard and mobile client were
+never in this repository. The first commit (`3ca5820`) contained six files:
+
+```
+.env.example  .github/workflows/static.yml  .gitignore  LICENSE  README.md  docker-compose.yml
+```
+
+There was no `backend/`, no `admin-dashboard/`, no `mobile/`, and no application code of any kind.
+The README described those components in detail, but no line of them had been committed.
+
+**What was actually removed** was the scaffolding that pointed at code which never existed:
+
+| Removed | Why |
+|---|---|
+| `docker-compose.yml` | Declared `build: ./backend` and `context: ./admin-dashboard`. Neither directory existed, so `docker compose up` failed before starting anything. It also pulled PostGIS, MinIO and Ollama images for services with no code to run. |
+| `.env.example` | Configured `DATABASE_URL`, `SECRET_KEY`, `BOOTSTRAP_ADMIN_EMAIL`/`PASSWORD` for a backend that was not present. A secret template for a non-existent service is a trap: it implies credentials that nothing consumes. |
+| `.github/workflows/static.yml` (replaced) | Published `path: '.'` — the repository root, which held only Markdown. That is why the live site served nothing despite green runs. |
+
+Everything else that was there is still there: `README.md` (rewritten to match reality), `LICENSE`,
+`.gitignore`. Nothing the project could run was taken away, because nothing could run.
+
+The platform design is not abandoned — it is documented above as the work still to do, and the
+delivered front end is written against the contract that backend would have to satisfy. But an
+honest repository containing one working slice is worth more than three empty directories that make
+`docker compose up` fail.
+
+## Accounts and authentication: absent by design, not by accident
+
+There is no account, login, session, password reset or MFA anywhere in this app. That is a deliberate
+consequence of the hosting constraint, not an oversight.
+
+**A static site cannot hold authentication.** GitHub Pages serves files. There is no server to verify
+a password, no secret store, no session, no rate limiter, no password reset channel, and no place to
+keep a signing key. Anything resembling "login" built purely in the browser would be theatre: the
+credential check would sit in a file every visitor can read. Shipping that would be worse than
+shipping nothing, because it would look like security while providing none.
+
+**So the app uses device-local identity instead.** There is no registration step, no password to
+lose, and no personal identifier to leak:
+
+- Nothing about a user leaves the device. Reports, drafts, saved facilities and the conversation live
+  in `localStorage` and IndexedDB.
+- A report is submitted without an identity at all. It is identified by a tracking code
+  (`SSD-XXXXXX`) that the citizen keeps; the queue is idempotent, so retries never duplicate it.
+- Nothing prevents someone from submitting a report — the barrier to civic participation is
+  deliberately zero.
+- The trust relationship is explicit: a consent checkbox before submission, a plain-language notice
+  that data is stored on the device, one-tap JSON export, and one-tap erase (`resetAll()`).
+
+**What real accounts would require**, and the decisions they force that should not be made by a
+developer alone:
+
+1. **Who is the identity provider?** A ministry, an NGO consortium, or the platform itself — each
+   implies different liability and different data-protection obligations.
+2. **What is the identifier?** A mobile number is the practical answer in South Sudan but requires an
+   SMS gateway, costs money per verification, and fails for users sharing a handset. A national ID
+   number requires an integration with the civil registry that may not exist. Email excludes most of
+   the target population.
+3. **What must be recoverable?** Losing a password must not mean losing a report about a broken water
+   point. Recovery without email or SMS is the hard part.
+4. **Offline sessions.** A citizen may be offline for days. Session tokens have to tolerate that
+   without silently locking people out.
+5. **Minimisation.** Reports about facilities rarely need an identity at all. A defensible design is
+   anonymous reports with optional, verified accounts only for staff — the moderators who need them.
+
+Until those are settled, adding a login screen would not move the project forward. The report
+lifecycle, idempotency keys and consent flow already exist, so the contract a future API must honour
+is written down in `store.js` and `docs/ARCHITECTURE.md`.
 
 ## Suggested order of work
 

@@ -144,10 +144,38 @@ deployable artefact is under 600 kB, most of it PNG icons.
 
 ## What is *not* in this repository
 
-The FastAPI backend, Next.js admin dashboard, Flutter client, PostGIS database and Ollama
-integration described in earlier drafts of this README do not exist here. `docker-compose.yml` and
-`.env.example` were removed with them so the repository does not advertise services it cannot start.
-[`docs/ROADMAP.md`](docs/ROADMAP.md) describes what a real deployment would need and in what order.
+**These components never existed here.** The first commit contained six files — a README, a licence,
+a `.gitignore`, a `.env.example`, a `docker-compose.yml` and a Pages workflow. There was no
+application code. The FastAPI backend, Next.js admin dashboard, Flutter client, PostGIS database and
+Ollama integration described in earlier drafts of this README were never committed, so nothing was
+deleted when they were dropped from the docs.
+
+What *was* removed was scaffolding that could only fail:
+
+- **`docker-compose.yml`** declared `build: ./backend` and `context: ./admin-dashboard`. Neither
+  directory existed, so `docker compose up` could not build.
+- **`.env.example`** configured database credentials and a bootstrap admin for a backend that was
+  not there.
+
+Keeping them would have meant continuing to advertise services the repository cannot start. The
+[ROADMAP](docs/ROADMAP.md) records the design, the deletion and the order real work would follow.
+
+### No accounts, no login — deliberately
+
+There is no authentication in this build, and there cannot be: GitHub Pages serves static files, so
+there is no server to verify a password, hold a session, or keep a signing key. A login screen built
+purely in the browser would check credentials against a file every visitor can read — it would look
+like security while providing none.
+
+The app uses **device-local identity** instead. Nothing about a user leaves the device, reports are
+submitted anonymously with a tracking code the citizen keeps, and the only trust relationship is an
+explicit consent checkbox, a JSON export and a one-tap erase. Reports are idempotent, so retries
+never duplicate them.
+
+Real accounts are blocked on decisions that are not a developer's to make — identity provider, which
+identifier is actually usable in South Sudan, how a password is recovered without email or SMS, and
+whether reports need an identity at all (they probably do not; staff moderation does). Those are set
+out in [ROADMAP → Accounts and authentication](docs/ROADMAP.md#accounts-and-authentication-absent-by-design-not-by-accident).
 
 ## Licence
 
