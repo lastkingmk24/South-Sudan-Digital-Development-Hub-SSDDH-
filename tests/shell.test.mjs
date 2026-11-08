@@ -215,3 +215,66 @@ test('icons: every icon renders valid, safe SVG', () => {
   assert.match(fallback, /^<svg /, 'unknown icons fall back to a neutral glyph instead of crashing');
   assert.match(fallback, /<circle/, 'the fallback is a simple dot');
 });
+
+test('docs: the README does not advertise components that are absent', () => {
+  const readme = readFileSync(resolve(here, '../README.md'), 'utf8');
+  const root = resolve(here, '..');
+
+  // Every directory the README names in a "what is here" table must exist.
+  for (const folder of ['web', 'scripts', 'tests', 'docs']) {
+    assert.ok(existsSync(join(root, folder)), `README references ${folder}/ which does not exist`);
+  }
+
+  // Components that never existed must stay absent, and must not be presented
+  // as present. This is the regression guard for the original README problem.
+  for (const folder of ['backend', 'admin-dashboard', 'mobile']) {
+    assert.ok(!existsSync(join(root, folder)), `${folder}/ does not exist and must not be referenced as if it does`);
+  }
+
+  assert.ok(!existsSync(join(root, 'docker-compose.yml')), 'compose file configured services that never existed');
+  assert.ok(!existsSync(join(root, '.env.example')), 'env template configured a backend that never existed');
+
+  // The README must say so plainly rather than quietly omitting it.
+  assert.match(readme, /never existed/i, 'README must state that the absent components were never committed');
+  assert.match(readme, /No accounts, no login/i, 'README must explain the missing authentication');
+});
+
+test('docs: internal documentation links resolve', () => {
+  const root = resolve(here, '..');
+  const docs = ['README.md', 'docs/ROADMAP.md', 'docs/ARCHITECTURE.md'];
+  for (const file of docs) {
+    const text = readFileSync(join(root, file), 'utf8');
+    // Markdown links to repo files: [text](path) — ignore URLs and pure anchors.
+    for (const match of text.matchAll(/\]\(([^)]+)\)/g)) {
+      const target = match[1];
+      if (/^https?:|^#|^mailto:/.test(target)) continue;
+      const [path, anchor] = target.split('#');
+      if (!path) continue;
+      const resolved = join(root, dirname(file), path);
+      assert.ok(existsSync(resolved), `${file} links to missing file: ${path}`);
+      if (anchor) {
+        const linked = readFileSync(resolved, 'utf8');
+        const heading = anchor
+          .replace(/^/, '')
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .trim()
+          .replace(/\s+/g, '-');
+        assert.match(
+          linked.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-'),
+          new RegExp(heading.replace(/-+/g, '-')),
+          `${file} links to missing anchor #${anchor} in ${path}`,
+        );
+      }
+    }
+  }
+});
+
+test('docs: no shipped file advertises an account or login feature', () => {
+  const appJs = read('assets/js/app.js');
+  const i18n = read('assets/js/i18n.js');
+  // The UI must not imply authentication exists.
+  for (const source of [appJs, i18n]) {
+    assert.doesNotMatch(source, /\b(sign in|log in|login|password|authenticate|auth token)\b/i);
+  }
+});
