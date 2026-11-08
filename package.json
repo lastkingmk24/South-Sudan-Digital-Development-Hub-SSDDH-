@@ -1,0 +1,28 @@
+{
+  "name": "ssddh",
+  "version": "0.3.0",
+  "private": true,
+  "description": "South Sudan Digital Development Hub — offline-first public services directory, community reporting and a citation-gated assistant.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://lastkingmk24.github.io/South-Sudan-Digital-Development-Hub-SSDDH-/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lastkingmk24/South-Sudan-Digital-Development-Hub-SSDDH-.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs --out _site",
+    "check": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:unit": "node --test tests/content.test.mjs tests/store.test.mjs tests/shell.test.mjs",
+    "test:ui": "node --test tests/app.test.mjs",
+    "verify": "npm run check && npm test"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

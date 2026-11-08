@@ -2,129 +2,153 @@
 
 **Founder: Mabruk Kei Ring**
 
-An offline-first, AI-assisted citizen services platform: a verified services directory, community issue
-reporting, and an information assistant that answers **only** from approved documents and cites them.
+An offline-first citizen services app for South Sudan: a directory of verified public facilities, a
+community issue-reporting queue, and an information assistant that answers **only** from approved
+documents and shows its citations.
 
-> **Demo data is synthetic.** Every facility and document created by the seed script is a fictional
-> placeholder labelled `[DEMO]`. Nothing in this repository represents a real facility, government
-> partnership or official approval. Real data must be entered and verified by authorised staff.
+**Live app → https://lastkingmk24.github.io/South-Sudan-Digital-Development-Hub-SSDDH-/**
 
-| Part | Folder | Stack |
-|---|---|---|
-| Backend API | `backend/` | Python FastAPI, SQLAlchemy, Alembic, PostgreSQL + PostGIS |
-| Admin dashboard | `admin-dashboard/` | Next.js 14 + TypeScript |
-| Android app | `mobile/` | Flutter / Dart, SQLite (sqflite) |
-| AI assistant | `backend/app/services/rag.py` | RAG (BM25 retrieval) + optional local Ollama model |
-| Infra | `docker-compose.yml` | Docker Compose (db, backend, admin, optional MinIO / Ollama) |
-| Docs | `docs/` | API, architecture, security, deployment, troubleshooting |
+> **Demo data is synthetic.** Every facility, alert and document in this build is a fictional
+> placeholder written for this repository. Nothing here represents a real facility, phone number,
+> government partner or official approval — the app repeats this in its footer, settings screen and
+> assistant. Real records must be entered and verified by authorised staff (see
+> [`docs/ROADMAP.md`](docs/ROADMAP.md)).
 
-## What is implemented
+---
 
-**Backend** – registration with consent, JWT login, bcrypt hashing, roles (citizen / moderator / admin),
-TOTP multi-factor auth for staff, facility directory (search, filter, radius search, verify, soft delete),
-community reports (idempotent create, approximate location, validated photo upload), moderation with
-citizen notifications, knowledge document upload (PDF/TXT/MD) with admin approval, RAG assistant,
-delta sync for offline clients, statistics, audit log, rate limiting, security headers,
-account export / erasure, retention purge.
+## What this repository actually contains
 
-**Admin dashboard** – staff login (with MFA code), overview statistics, facility management, report
-moderation, AI knowledge document management, user/role management, audit log, MFA enrolment.
+The project was originally described as a full platform (FastAPI + PostGIS backend, Next.js admin
+dashboard, Flutter app). Those components were never committed, and the previous GitHub Pages
+workflow published the empty repository root, so the site served nothing.
 
-**Android app** – registration/login with privacy consent, dashboard, offline service directory with
-search/filter and freshness indicator, saved items, report drafting offline with photo + approximate
-location, a persistent upload queue with retry/back-off and duplicate prevention, report tracking,
-notifications, AI assistant with citations, data export and account deletion.
+This repository now ships **one thing that works end to end**: a static, dependency-free progressive
+web app in [`web/`](web) that runs entirely in the browser and deploys to GitHub Pages.
 
-## Quick start (Windows 11)
+| Path | What it is |
+|---|---|
+| `web/` | The complete app: HTML, CSS, ES modules, icons, manifest, service worker. No build step, no CDN, no network calls. |
+| `scripts/build.mjs` | Validates the shell (paths, manifest, precache list, CSS coverage, i18n parity) and assembles `_site/`. |
+| `scripts/serve.mjs` | Zero-dependency static server for local development. |
+| `tests/` | Node test-runner suites: data/i18n/retrieval, local store, deployable shell, and DOM-level UI tests. |
+| `.github/workflows/static.yml` | Build → verify → test → deploy `_site/` to Pages. |
+| `docs/ROADMAP.md` | What is intentionally not built yet, and what a real deployment needs. |
 
-### 1. Install prerequisites
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (enable the WSL 2 backend) – required
-- [Git for Windows](https://git-scm.com/download/win)
-- For the mobile app: [Flutter SDK](https://docs.flutter.dev/get-started/install/windows/mobile) + Android Studio (Android SDK + an emulator)
-- Optional for dashboard development without Docker: Node.js 20 LTS; for backend development without Docker: Python 3.12
+## The app
 
-### 2. Configure
-Open **PowerShell** in the project folder:
-```powershell
-Copy-Item .env.example .env
-notepad .env
+| Screen | What it does |
+|---|---|
+| **Home** | Bilingual hero with search, per-issue quick actions, current alerts, live counts and an explicit demo-data notice. |
+| **Services** | 20 demo facilities across six categories and ten states. Text search, category filters, state filter, sort by recency/name, saved-only toggle, and detail dialogs with call, map and "report about this facility" actions. |
+| **Saved** | The same directory restricted to facilities you saved; saved choices survive reloads and offline periods. |
+| **Report** | Category, optional facility, free-text description (20–1000 chars), consent checkbox, optional photo resized on-device to 1024 px/≈150 KB, optional approximate location. Reports get a tracking code (`SSD-XXXXXX`) and an idempotency key. |
+| **Assistant** | BM25 retrieval over 10 approved documents. Answers quote the best-matching sections and always list citations (document, issuing authority, approval date, section heading). Below a confidence threshold it refuses instead of guessing. |
+| **Settings** | Language, theme, storage usage, JSON export, and delete-everything. |
+
+**Offline first.** Everything is stored on the device: `localStorage` for saved items, drafts,
+reports and the conversation; IndexedDB for photos. A service worker precaches the whole shell, so
+the app opens and works without a connection. Reports created offline sit in an upload queue and are
+marked received when the connection returns.
+
+**Bilingual.** Full English and Arabic dictionaries (223 keys, enforced at parity by a test), an
+Arabic→English query expander so Arabic questions retrieve the English corpus, and RTL layout that
+survives switching direction at runtime.
+
+**Accessible.** Semantic landmarks, a skip link, visible `:focus-visible` rings, `aria-live` regions
+for the toast host and chat log, `aria-pressed` on toggles, and `prefers-reduced-motion` support.
+
+## Run it locally
+
+Requirements: Node.js 20 or newer. The app itself needs nothing but a static file server.
+
+```bash
+npm install          # dev dependency: jsdom, only for the UI tests
+npm start            # http://localhost:8080 — serves web/ with SPA fallback
+npm test             # all suites (66 tests)
+npm run build        # validate + assemble _site/
 ```
-Change at least `POSTGRES_PASSWORD` (and the same password inside `DATABASE_URL`), `SECRET_KEY`,
-`BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD`. Generate a secret key with:
-```powershell
-python -c "import secrets; print(secrets.token_urlsafe(48))"
+
+Open `web/index.html` through a server rather than `file://` — ES modules and the service worker
+require an HTTP origin.
+
+### Verifying the build
+
+`npm run check` fails the build on the things that silently break a Pages deployment:
+
+- a referenced asset that does not exist
+- a root-absolute URL (the site is served from `/<repo>/`, so every path must be relative)
+- a manifest missing its 192/512/maskable icons
+- a service-worker precache list that has drifted from the files on disk
+- a class used by the JS but never styled
+- a translation key used by the app but missing from English or Arabic
+
+## Testing
+
+```
+node --test tests/                    # everything
+node --test tests/content.test.mjs    # data, i18n parity, BM25 retrieval and refusals
+node --test tests/store.test.mjs      # persistence, report lifecycle, idempotency, export
+node --test tests/shell.test.mjs      # index.html, manifest, service worker, CSS, helpers
+node --test tests/app.test.mjs        # UI flows in jsdom (skipped if jsdom is absent)
 ```
 
-### 3. Start the platform
-```powershell
-docker compose up --build
-```
-The backend applies the database migrations and creates the bootstrap admin automatically.
-- API: http://localhost:8000 (interactive docs at http://localhost:8000/docs)
-- Admin dashboard: http://localhost:3000
+The UI suite boots the real `web/index.html` and `web/assets/js/app.js` in jsdom and exercises the
+actual flows: search and filters, saving, the report form and validation, tracking a report's
+timeline, assistant answers and refusals, language switching, the theme toggle, offline submission
+and queue draining, and unknown-route fallback.
 
-Load the **synthetic demo data** (optional):
-```powershell
-docker compose exec backend python -m app.seed
+## Deploy
+
+Pushing to `main` runs `.github/workflows/static.yml`: it installs dependencies, validates the
+shell, runs the full test suite, assembles `_site/`, and publishes it with GitHub Pages. Nothing is
+built into the repository root, and `_site/` is git-ignored.
+
+To deploy from a fork, enable **Settings → Pages → Build and deployment → GitHub Actions** once;
+the workflow needs `pages: write` and `id-token: write`, which it requests itself.
+
+## Architecture
+
+```
+web/
+├── index.html              # single page, all views render into #view
+├── 404.html                # byte-identical copy so deep links survive on Pages
+├── manifest.webmanifest    # installable PWA metadata, relative start_url/scope
+├── sw.js                   # cache-first shell, network-first navigations, versioned caches
+└── assets/
+    ├── css/app.css         # design tokens, light/dark, RTL, all components
+    ├── img/                # hand-built SVG logo, PNG icons, social card
+    └── js/
+        ├── app.js          # router, six views, dialogs, delegated events
+        ├── content.js      # demo data + approved knowledge base
+        ├── i18n.js         # EN/AR dictionaries and helpers
+        ├── rag.js          # BM25 index, Arabic expansion, refusal gate
+        ├── store.js        # localStorage state, IndexedDB photos
+        ├── util.js         # escaping, formatting, toasts, dialogs, image resize
+        └── icons.js        # inline SVG icon set
 ```
 
-Optional services:
-```powershell
-docker compose --profile ai up -d ollama          # local LLM runtime
-docker compose exec ollama ollama pull llama3.2:3b
-docker compose --profile minio up -d minio        # S3-compatible storage (also set S3_* in .env)
-```
-Without Ollama the assistant still works and returns the best-matching approved passages with citations.
+No framework, no bundler, no runtime dependency, no analytics, no third-party requests. The whole
+deployable artefact is under 600 kB, most of it PNG icons.
 
-### 4. First login
-Sign in to http://localhost:3000 with the bootstrap admin, then open **My security** and enable MFA.
+### Design decisions worth knowing
 
-### 5. Run the Android app
-```powershell
-cd mobile
-```
-Follow [`mobile/android_manifest_additions.md`](mobile/android_manifest_additions.md) once (generates the Android
-project and adds permissions), then:
-```powershell
-flutter pub get
-flutter run                                   # Android emulator -> backend at http://10.0.2.2:8000
-flutter run --dart-define=API_BASE=http://192.168.1.20:8000   # real phone on the same Wi-Fi (use your PC's IP)
-```
-Allow inbound port 8000 in Windows Firewall for a physical phone. Build an APK with `flutter build apk`.
+- **Static over server.** GitHub Pages serves files only, so the app is serverless by design. The
+  assistant is a real retrieval engine running in the browser, not a mock.
+- **Refusal is a feature.** `rag.js` returns `refused: true` when coverage or score is too low. The
+  UI renders that as an honest "I could not find this in the approved documents" rather than a
+  plausible-sounding guess.
+- **Relative everything.** Project sites live under `/<repo>/`; absolute paths work locally and fail
+  in production. Both the build script and the tests fail on absolute paths.
+- **Demo data is labelled at the source.** Records carry `source: 'demo'`, the UI shows a "Demo data"
+  chip, and the footer says it is not an official government service.
 
-### 6. Run the tests
-```powershell
-cd backend
-python -m venv .venv ; .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m pytest -q
-```
-Dashboard: `cd admin-dashboard; npm install; npm run typecheck; npm run build`.
-Mobile: `cd mobile; flutter test`.
+## What is *not* in this repository
 
-## Upload to GitHub
-```powershell
-git init
-git add .
-git commit -m "Initial commit: SSDDH"
-git branch -M main
-```
-Create an **empty** repository named `ssddh-south-sudan-digital-development-hub` on github.com (no README/licence),
-then:
-```powershell
-git remote add origin https://github.com/<your-username>/ssddh-south-sudan-digital-development-hub.git
-git push -u origin main
-```
-`.env` is git-ignored – never commit real secrets. GitHub Actions (`.github/workflows/ci.yml`) then runs the
-backend tests, dashboard build and Flutter analysis/tests automatically.
-
-## Documentation
-- [API reference](docs/API.md)
-- [Architecture & offline sync](docs/ARCHITECTURE.md)
-- [Security & privacy](docs/SECURITY.md)
-- [Deployment & backups](docs/DEPLOYMENT.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [External dependencies & safe dev alternatives](docs/DEPENDENCIES.md)
+The FastAPI backend, Next.js admin dashboard, Flutter client, PostGIS database and Ollama
+integration described in earlier drafts of this README do not exist here. `docker-compose.yml` and
+`.env.example` were removed with them so the repository does not advertise services it cannot start.
+[`docs/ROADMAP.md`](docs/ROADMAP.md) describes what a real deployment would need and in what order.
 
 ## Licence
-MIT – see [LICENSE](LICENSE). Copyright (c) 2026 Mabruk Kei Ring.
+
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Mabruk Kei Ring.
